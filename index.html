@@ -27,10 +27,8 @@ h1 {
 
 #result {
   margin-top: 15px;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: bold;
-  padding: 10px;
-  white-space: pre-line;
 }
 
 button {
@@ -57,7 +55,7 @@ button {
 
 <script>
 
-const API_URL = "https://script.google.com/macros/s/AKfycbyNVzRPewKUre5Zd0vkEiCl67Qb0OaJEAX1a_xXNyC9Xqf7ZH5rfgbhIyVyQxYaESuIIw/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbwVywm2YvkEw2cOkizk_-nHYq-qOIhk3uJOvOIN3bFyL44RviEEgOQ1Mh4eQtbhcN82FA/exec";
 
 let html5QrCode;
 let scanning = false;
@@ -113,24 +111,20 @@ function onScanSuccess(decodedText) {
 
   fetch(API_URL, {
     method: "POST",
+    mode: "no-cors", // 🔥 FIX CORS
     headers: {
       "Content-Type": "application/json"
     },
     body: JSON.stringify({ qr: decodedText })
   })
-  .then(res => res.json())
-  .then(data => {
+  .then(() => {
 
-    document.getElementById("result").innerText =
-      "STATUS: " + data.status + "\n" +
-      "MSG: " + data.message + "\n" +
-      "QR: " + (data.qr || "") + "\n" +
-      "SCAN: " + (data.qr_scan || "") + "\n" +
-      "DATA: " + JSON.stringify(data.data_di_sheet || []);
+    // Karena no-cors, tidak bisa baca response
+    document.getElementById("result").innerText = "✅ SCANNED";
 
     setTimeout(() => {
       html5QrCode.resume();
-    }, 3000);
+    }, 1500);
 
   })
   .catch(err => {
