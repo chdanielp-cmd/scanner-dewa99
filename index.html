@@ -1,107 +1,6 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>SCANNER DEWA99 PRO</title>
-
-<script src="https://unpkg.com/html5-qrcode"></script>
-
-<style>
-body {
-  margin: 0;
-  background: black;
-  color: white;
-  font-family: Arial;
-  text-align: center;
-}
-
-h1 {
-  padding: 10px;
-}
-
-#reader {
-  width: 100%;
-  max-width: 400px;
-  margin: auto;
-}
-
-#result {
-  margin-top: 15px;
-  font-size: 20px;
-  font-weight: bold;
-}
-
-button {
-  padding: 12px 20px;
-  font-size: 16px;
-  background: orange;
-  border: none;
-  border-radius: 8px;
-  margin: 10px;
-}
-</style>
-</head>
-
-<body>
-
-<h1>🎟️ SCANNER DEWA99 PRO</h1>
-
-<div id="reader"></div>
-
-<button onclick="startScanner()">▶ MULAI SCAN</button>
-<button onclick="stopScanner()">⛔ STOP</button>
-
-<div id="result">Siap scan...</div>
-
 <script>
 
 const API_URL = "https://script.google.com/macros/s/AKfycbwVywm2YvkEw2cOkizk_-nHYq-qOIhk3uJOvOIN3bFyL44RviEEgOQ1Mh4eQtbhcN82FA/exec";
-
-let html5QrCode;
-let scanning = false;
-
-window.onload = function() {
-  startScanner();
-};
-
-function startScanner() {
-
-  if (scanning) return;
-
-  scanning = true;
-
-  html5QrCode = new Html5Qrcode("reader");
-
-  Html5Qrcode.getCameras().then(devices => {
-
-    if (devices && devices.length) {
-
-      let cameraId = devices[devices.length - 1].id;
-
-      html5QrCode.start(
-        cameraId,
-        {
-          fps: 10,
-          qrbox: { width: 300, height: 300 }
-        },
-        onScanSuccess
-      );
-
-      document.getElementById("result").innerText = "📷 Kamera aktif...";
-    }
-
-  }).catch(err => {
-    document.getElementById("result").innerText = "❌ Kamera error: " + err;
-  });
-}
-
-function stopScanner() {
-  if (html5QrCode) {
-    html5QrCode.stop();
-    scanning = false;
-    document.getElementById("result").innerText = "⛔ Scanner dihentikan";
-  }
-}
 
 function onScanSuccess(decodedText) {
 
@@ -109,17 +8,13 @@ function onScanSuccess(decodedText) {
 
   document.getElementById("result").innerText = "🔄 Checking...";
 
-  fetch(API_URL, {
-    method: "POST",
-    mode: "no-cors", // 🔥 FIX CORS
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ qr: decodedText })
+  // 🔥 KIRIM VIA GET
+  fetch(API_URL + "?qr=" + decodedText, {
+    method: "GET",
+    mode: "no-cors"
   })
   .then(() => {
 
-    // Karena no-cors, tidak bisa baca response
     document.getElementById("result").innerText = "✅ SCANNED";
 
     setTimeout(() => {
@@ -134,6 +29,3 @@ function onScanSuccess(decodedText) {
 }
 
 </script>
-
-</body>
-</html>
