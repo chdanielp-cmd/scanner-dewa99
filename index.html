@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>SCANNER DEWA99 PRO</title>
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<style>
+body {
+  margin: 0;
+  background: black;
+  color: white;
+  font-family: Arial;
+  text-align: center;
+}
+
+h1 {
+  padding: 10px;
+}
+
+#reader {
+  width: 100%;
+  max-width: 400px;
+  margin: auto;
+}
+
+#result {
+  margin-top: 15px;
+  font-size: 22px;
+  font-weight: bold;
+}
+
+button {
+  padding: 12px 20px;
+  font-size: 16px;
+  background: orange;
+  border: none;
+  border-radius: 8px;
+  margin: 10px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>🎟️ SCANNER DEWA99 PRO</h1>
+
+<div id="reader"></div>
+
+<button onclick="startScanner()">▶ MULAI SCAN</button>
+<button onclick="stopScanner()">⛔ STOP</button>
+
+<div id="result">Siap scan...</div>
+
+<audio id="ok" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
+<audio id="fail" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
+
+<script>
+
+const API_URL = "https://script.google.com/macros/s/AKfycbwVywm2YvkEw2cOkizk_-nHYq-qOIhk3uJOvOIN3bFyL44RviEEgOQ1Mh4eQtbhcN82FA/exec";
+
+let html5QrCode;
+let scanning = false;
+let processing = false; // 🔥 lock anti double
+
+window.onload = function() {
+  startScanner();
+};
+
+function startScanner() {
+
+  if (scanning) return;
+
+  scanning = true;
+
+  html5QrCode = new Html5Qrcode("reader");
+
+  Html5Qrcode.getCameras().then(devices => {
+
+    if (devices && devices.length) {
+
+      let cameraId = devices[devices.length - 1].id;
+
+      html5QrCode.start(
+        cameraId,
+        {
+          fps: 15,
+          qrbox: { width: 300, height: 300 }
+        },
+        onScanSuccess
+      );
+
+      document.getElementById("result").innerText = "📷 Kamera aktif...";
+    }
+
+  }).catch(err => {
+    document.getElementById("result").innerText = "❌ Kamera error: " + err;
+  });
+}
+
+function stopScanner() {
+  if (html5QrCode) {
+    html5QrCode.stop();
+    scanning = false;
+    document.getElementById("result").innerText = "⛔ Scanner dihentikan";
+  }
+}
+
+function onScanSuccess(decodedText) {
+alert("QR TERBACA: " + decodedText);
+
+  if (processing) return; // 🔥 anti double scan
+  processing = true;
+
+  document.getElementById("result").innerText = "🔄 Checking...";
+
+  html5QrCode.pause(); // 🔥 lebih ringan dari stop
+
+  fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify({ qr: decodedText })
+  })
+  .then(res => res.json())
+  .then(data => {
+
+    if (data.status === "VALID") {
+      document.getElementById("result").innerHTML =
+        "<span style='color:lime'>✅ VALID</span><br>" +
+        (data.nama || "") + "<br>" +
+        (data.qr || decodedText);
+
+      document.getElementById("ok").play();
+      navigator.vibrate(200);
+
+    } else {
+      document.getElementById("result").innerHTML =
+        "<span style='color:red'>❌ " + data.message + "</span>";
+
+      document.getElementById("fail").play();
+      navigator.vibrate([100,50,100]);
+    }
+
+    setTimeout(() => {
+      processing = false;
+      html5QrCode.resume();
+      document.getElementById("result").innerText = "Siap scan berikutnya...";
+    }, 1500);
+
+  })
+  .catch(err => {
+    document.getElementById("result").innerText = "❌ ERROR: " + err;
+    processing = false;
+    html5QrCode.resume();
+  });
+}
+
+</script>
+
+</body>
+</html>
