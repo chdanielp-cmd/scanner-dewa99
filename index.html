@@ -27,8 +27,9 @@ h1 {
 
 #result {
   margin-top: 15px;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: bold;
+  padding: 10px;
 }
 
 button {
@@ -53,16 +54,12 @@ button {
 
 <div id="result">Siap scan...</div>
 
-<audio id="ok" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
-<audio id="fail" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
-
 <script>
 
 const API_URL = "https://script.google.com/macros/s/AKfycbwVywm2YvkEw2cOkizk_-nHYq-qOIhk3uJOvOIN3bFyL44RviEEgOQ1Mh4eQtbhcN82FA/exec";
 
 let html5QrCode;
 let scanning = false;
-let processing = false; // 🔥 lock anti double
 
 window.onload = function() {
   startScanner();
@@ -85,7 +82,7 @@ function startScanner() {
       html5QrCode.start(
         cameraId,
         {
-          fps: 15,
+          fps: 10,
           qrbox: { width: 300, height: 300 }
         },
         onScanSuccess
@@ -109,13 +106,9 @@ function stopScanner() {
 
 function onScanSuccess(decodedText) {
 
-
-  if (processing) return; // 🔥 anti double scan
-  processing = true;
+  html5QrCode.pause();
 
   document.getElementById("result").innerText = "🔄 Checking...";
-
-  html5QrCode.pause(); // 🔥 lebih ringan dari stop
 
   fetch(API_URL, {
     method: "POST",
@@ -124,33 +117,21 @@ function onScanSuccess(decodedText) {
   .then(res => res.json())
   .then(data => {
 
-    if (data.status === "VALID") {
-      document.getElementById("result").innerHTML =
-        "<span style='color:lime'>✅ VALID</span><br>" +
-        (data.nama || "") + "<br>" +
-        (data.qr || decodedText);
-
-      document.getElementById("ok").play();
-      navigator.vibrate(200);
-
-    } else {
-      document.getElementById("result").innerHTML =
-        "<span style='color:red'>❌ " + data.message + "</span>";
-
-      document.getElementById("fail").play();
-      navigator.vibrate([100,50,100]);
-    }
+    // 🔥 TAMPILKAN SEMUA RESPONSE
+    document.getElementById("result").innerText =
+      "STATUS: " + data.status + "\n" +
+      "MSG: " + data.message + "\n" +
+      "QR: " + (data.qr || "") + "\n" +
+      "SCAN: " + (data.qr_scan || "") + "\n" +
+      "DATA: " + JSON.stringify(data.data_di_sheet || []);
 
     setTimeout(() => {
-      processing = false;
       html5QrCode.resume();
-      document.getElementById("result").innerText = "Siap scan berikutnya...";
-    }, 1500);
+    }, 3000);
 
   })
   .catch(err => {
     document.getElementById("result").innerText = "❌ ERROR: " + err;
-    processing = false;
     html5QrCode.resume();
   });
 }
